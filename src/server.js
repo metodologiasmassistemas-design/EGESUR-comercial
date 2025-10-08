@@ -28,6 +28,11 @@ app.get('/', (req, res) => {
   });
 });
 
+// Endpoint ligero para health checks externos (cron jobs, monitoring)
+app.get('/ping', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Rutas protegidas con autenticación
 app.use('/api/dispositivos', authenticate, dispositivosRoutes);
 

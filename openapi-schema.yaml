@@ -4,8 +4,8 @@ info:
   description: API para descargar dispositivos legales del Diario Oficial El Peruano y almacenarlos en Google Drive
   version: 1.0.0
 servers:
-  - url: https://tu-dominio.com
-    description: Servidor de producción (reemplazar con tu URL de deployment)
+  - url: https://egesur-asistente-comercial.onrender.com
+    description: Servidor de producción
 
 components:
   securitySchemes:

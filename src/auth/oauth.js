@@ -9,11 +9,21 @@ const TOKEN_PATH = './config/oauth-token.json';
 const CREDENTIALS_PATH = './config/oauth-credentials.json';
 
 /**
- * Carga las credenciales OAuth del archivo
+ * Carga las credenciales OAuth del archivo o variable de entorno
  */
 function loadCredentials() {
-  const content = readFileSync(CREDENTIALS_PATH);
-  return JSON.parse(content);
+  // Prioridad 1: Variable de entorno
+  if (process.env.OAUTH_CREDENTIALS_JSON) {
+    return JSON.parse(process.env.OAUTH_CREDENTIALS_JSON);
+  }
+
+  // Prioridad 2: Archivo local
+  if (existsSync(CREDENTIALS_PATH)) {
+    const content = readFileSync(CREDENTIALS_PATH);
+    return JSON.parse(content);
+  }
+
+  throw new Error('No se encontraron credenciales OAuth. Configura OAUTH_CREDENTIALS_JSON o crea el archivo oauth-credentials.json');
 }
 
 /**
@@ -80,7 +90,14 @@ async function getNewToken(oAuth2Client) {
 export async function authorize() {
   const oAuth2Client = createOAuth2Client();
 
-  // Verificar si ya existe un token guardado
+  // Prioridad 1: Token desde variable de entorno (producción)
+  if (process.env.OAUTH_TOKEN_JSON) {
+    const token = JSON.parse(process.env.OAUTH_TOKEN_JSON);
+    oAuth2Client.setCredentials(token);
+    return oAuth2Client;
+  }
+
+  // Prioridad 2: Token desde archivo local (desarrollo)
   if (existsSync(TOKEN_PATH)) {
     const token = JSON.parse(readFileSync(TOKEN_PATH));
     oAuth2Client.setCredentials(token);

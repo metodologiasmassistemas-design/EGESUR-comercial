@@ -8,7 +8,9 @@ export const config = {
   googleDrive: {
     folderId: process.env.GOOGLE_DRIVE_FOLDER_ID,
     serviceAccountJson: process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
-    credentialsPath: process.env.GOOGLE_APPLICATION_CREDENTIALS
+    credentialsPath: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    oauthCredentialsJson: process.env.OAUTH_CREDENTIALS_JSON,
+    oauthTokenJson: process.env.OAUTH_TOKEN_JSON
   }
 };
 
@@ -21,7 +23,13 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-if (!config.googleDrive.serviceAccountJson && !config.googleDrive.credentialsPath) {
-  console.error('❌ Debes configurar GOOGLE_SERVICE_ACCOUNT_JSON o GOOGLE_APPLICATION_CREDENTIALS');
+// Validar que haya al menos una forma de autenticación con Google Drive
+const hasServiceAccount = config.googleDrive.serviceAccountJson || config.googleDrive.credentialsPath;
+const hasOAuth = config.googleDrive.oauthTokenJson || config.googleDrive.oauthCredentialsJson;
+
+if (!hasServiceAccount && !hasOAuth) {
+  console.error('❌ Debes configurar al menos una forma de autenticación con Google Drive:');
+  console.error('   - Service Account: GOOGLE_SERVICE_ACCOUNT_JSON o GOOGLE_APPLICATION_CREDENTIALS');
+  console.error('   - OAuth: OAUTH_TOKEN_JSON o OAUTH_CREDENTIALS_JSON');
   process.exit(1);
 }

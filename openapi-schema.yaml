@@ -168,17 +168,8 @@ security:
 paths:
   /api/dispositivos/download:
     post:
-      summary: Descargar dispositivos y subir a Google Drive
-      description: |
-        Descarga PDFs del Diario Oficial El Peruano y los almacena en Google Drive.
-
-        El proceso realiza:
-        1. Validación de URLs del Diario Oficial
-        2. Descarga de archivos PDF
-        3. Subida a carpeta específica de Google Drive
-        4. Limpieza de archivos temporales
-
-        **Nota**: La API Key debe incluirse en el header `x-api-key`
+      summary: Descargar PDFs del Peruano y almacenar en Google Drive
+      description: Descarga PDFs del Diario Oficial El Peruano, valida URLs, sube archivos a Google Drive y limpia temporales. Requiere header x-api-key para autenticación.
       operationId: downloadDispositivos
       requestBody:
         required: true

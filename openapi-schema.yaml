@@ -1,0 +1,262 @@
+openapi: 3.1.0
+info:
+  title: EGESUR - Asistente Comercial API
+  description: API para descargar dispositivos legales del Diario Oficial El Peruano y almacenarlos en Google Drive
+  version: 1.0.0
+servers:
+  - url: https://tu-dominio.com
+    description: Servidor de producción (reemplazar con tu URL de deployment)
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API Key para autenticación
+
+  schemas:
+    Dispositivo:
+      type: object
+      required:
+        - url
+        - numero
+        - titulo
+        - fecha
+      properties:
+        url:
+          type: string
+          format: uri
+          description: URL del PDF en el Diario Oficial El Peruano
+          example: "https://busquedas.elperuano.pe/download/url/aprueban-reglamento-ds-001-2024-em.pdf"
+        numero:
+          type: string
+          description: Número del dispositivo legal
+          example: "DS-001-2024-EM"
+        titulo:
+          type: string
+          description: Título del dispositivo legal
+          example: "Aprueban Reglamento de Generación Eléctrica"
+        fecha:
+          type: string
+          description: Fecha de publicación (formato DD/MM/YYYY)
+          example: "07/10/2025"
+        entidad:
+          type: string
+          description: Entidad autora del dispositivo
+          example: "Ministerio de Energía y Minas"
+
+    DownloadRequest:
+      type: object
+      required:
+        - dispositivos
+      properties:
+        dispositivos:
+          type: array
+          description: Array de dispositivos legales a descargar
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Dispositivo'
+
+    UploadedFile:
+      type: object
+      properties:
+        numero:
+          type: string
+          example: "DS-001-2024-EM"
+        titulo:
+          type: string
+          example: "Aprueban Reglamento de Generación Eléctrica"
+        driveFileId:
+          type: string
+          description: ID del archivo en Google Drive
+          example: "1a2b3c4d5e6f7g8h9i0j"
+        driveLink:
+          type: string
+          format: uri
+          description: Link para visualizar el archivo en Google Drive
+          example: "https://drive.google.com/file/d/1a2b3c4d5e6f7g8h9i0j/view"
+        downloadLink:
+          type: string
+          format: uri
+          description: Link de descarga directa del archivo
+          example: "https://drive.google.com/uc?id=1a2b3c4d5e6f7g8h9i0j&export=download"
+
+    DownloadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        summary:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Total de dispositivos solicitados
+              example: 5
+            downloaded:
+              type: integer
+              description: Archivos descargados exitosamente
+              example: 5
+            uploaded:
+              type: integer
+              description: Archivos subidos a Drive exitosamente
+              example: 4
+            failed:
+              type: integer
+              description: Total de errores
+              example: 1
+        uploaded:
+          type: array
+          description: Lista de archivos subidos exitosamente
+          items:
+            $ref: '#/components/schemas/UploadedFile'
+        errors:
+          type: array
+          description: Lista de errores ocurridos
+          items:
+            type: object
+            properties:
+              step:
+                type: string
+                enum: [download, upload]
+                example: "download"
+              numero:
+                type: string
+                example: "DS-002-2024-EM"
+              error:
+                type: string
+                example: "Error descargando PDF: timeout"
+
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: string
+          enum: [operational, error]
+          example: "operational"
+        googleDrive:
+          type: object
+          properties:
+            connected:
+              type: boolean
+              example: true
+            folderId:
+              type: string
+              example: "1a2b3c4d5e6f7g8h9i0j"
+            folderName:
+              type: string
+              example: "EGESUR - Dispositivos Legales"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "API Key requerida"
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /api/dispositivos/download:
+    post:
+      summary: Descargar dispositivos y subir a Google Drive
+      description: |
+        Descarga PDFs del Diario Oficial El Peruano y los almacena en Google Drive.
+
+        El proceso realiza:
+        1. Validación de URLs del Diario Oficial
+        2. Descarga de archivos PDF
+        3. Subida a carpeta específica de Google Drive
+        4. Limpieza de archivos temporales
+
+        **Nota**: La API Key debe incluirse en el header `x-api-key`
+      operationId: downloadDispositivos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DownloadRequest'
+            example:
+              dispositivos:
+                - url: "https://busquedas.elperuano.pe/download/url/aprueban-reglamento-ds-001-2024-em.pdf"
+                  numero: "DS-001-2024-EM"
+                  titulo: "Aprueban Reglamento de Generación Eléctrica"
+                  fecha: "07/10/2025"
+                  entidad: "Ministerio de Energía y Minas"
+                - url: "https://busquedas.elperuano.pe/download/url/modifican-tarifa-electrica-rm-023-2024-em.pdf"
+                  numero: "RM-023-2024-EM"
+                  titulo: "Modifican Tarifa Eléctrica"
+                  fecha: "06/10/2025"
+                  entidad: "Ministerio de Energía y Minas"
+      responses:
+        '200':
+          description: Proceso completado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadResponse'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: API Key no proporcionada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: API Key inválida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/dispositivos/health:
+    get:
+      summary: Verificar estado de la API
+      description: Verifica que la API esté operacional y que la conexión con Google Drive funcione correctamente
+      operationId: checkHealth
+      responses:
+        '200':
+          description: API operacional
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '401':
+          description: API Key no proporcionada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: API Key inválida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error de conexión con Google Drive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
